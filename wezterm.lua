@@ -72,6 +72,27 @@ local function tab_label(idx, color_key, display, custom_name)
 	return string.format("  %d%s%s  ", idx, sep, text)
 end
 
+-- Default program: hoot's desk (hoot's frame and sidebar round your shell)
+-- when hoot is installed, else the plain shell. Matches Windows Terminal's
+-- default profile, so $PROFILE loads the same way here as there.
+local is_windows = wezterm.target_triple:find("windows") ~= nil
+local function exists(path)
+	local f = io.open(path, "r")
+	if f then f:close() end
+	return f ~= nil
+end
+local hoot_paths = is_windows and { "D:/code/hoot/hoot.exe" }
+	or { (os.getenv("HOME") or "") .. "/go/bin/hoot", "/opt/homebrew/bin/hoot", "/usr/local/bin/hoot" }
+for _, p in ipairs(hoot_paths) do
+	if exists(p) then
+		config.default_prog = { p, "-desk" }
+		break
+	end
+end
+if not config.default_prog and is_windows then
+	config.default_prog = { "powershell.exe" }
+end
+
 -- Font settings
 config.font = wezterm.font("BlexMono Nerd Font", { weight = "Regular" })
 config.font_rules = {
@@ -382,6 +403,11 @@ config.keys = {
 
 	-- Fuzzy tab picker
 	{ key = "/", mods = "ALT", action = wezterm.action.ShowLauncherArgs({ flags = "FUZZY|TABS" }) },
+
+	-- Shift+PageUp/Down reach the program: hoot's desk scrolls its own
+	-- scrollback with them (WezTerm's would scroll a screen hoot redraws)
+	{ key = "PageUp",   mods = "SHIFT", action = wezterm.action.DisableDefaultAssignment },
+	{ key = "PageDown", mods = "SHIFT", action = wezterm.action.DisableDefaultAssignment },
 
 	-- Tab movement
 	{ key = "LeftArrow",  mods = "CTRL|SHIFT", action = wezterm.action.MoveTabRelative(-1) },
